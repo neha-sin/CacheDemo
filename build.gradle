@@ -14,11 +14,11 @@ run.enabled = false
 distTar.enabled=false
 distZip.enabled=false
 
-applicationName = 'solace-samples-java'
+applicationName = 'CacheDemo'
 version = ''
 
 jar {
-    baseName = 'solace-samples-java'
+    baseName = 'CacheDemo'
     version =  version
     manifest {
         attributes 'Implementation-Title': 'Solace Getting Started Samples',
@@ -48,6 +48,8 @@ repositories {
 dependencies {
     // Solace Messaging API for Java Dependencies
     compile("com.solacesystems:sol-jcsmp:10.5.0")
+    //Mongo DB
+    compile 'org.mongodb:mongodb-driver-sync:3.10.1'
 }
 
 // unused, so commenting out (Issue #58)
@@ -55,20 +57,11 @@ dependencies {
      // just a placeholder
 //}
 
-  def scripts = ['topicPublisher':'com.solace.samples.TopicPublisher',
-				 'topicSubscriber':'com.solace.samples.TopicSubscriber',
-				 'queueProducer':'com.solace.samples.QueueProducer',
-				 'queueConsumer':'com.solace.samples.QueueConsumer',
-				 'basicRequestor':'com.solace.samples.BasicRequestor',
-				 'basicReplier':'com.solace.samples.BasicReplier',
-				 'confirmedPublish':'com.solace.samples.ConfirmedPublish',
-				 'topicToQueueMapping':'com.solace.samples.TopicToQueueMapping',
-                 'featureMessageSelectorsOnQueue':'com.solace.samples.features.MessageSelectorsOnQueue',
-                 'featureMessageTTLAndDeadMessageQueue':'com.solace.samples.features.MessageTTLAndDeadMessageQueue',
-                 'featureQueueProvisionAndBrowse':'com.solace.samples.features.QueueProvisionAndBrowse',
-                 'featureQueueProvisionAndRequestActiveFlowIndication':'com.solace.samples.features.QueueProvisionAndRequestActiveFlowIndication',
-                 'featureTransactions':'com.solace.samples.features.Transactions',
-                 'featureMessageReplay':'com.solace.samples.features.MessageReplay'
+  def scripts = ['NSECacheQueryReplier':'com.solace.samples.projects.NSECacheQueryReplier',
+				 'NSEStoreCache':'com.solace.samples.projects.NSEStoreCache',
+				 'NSEPublishFileToSolace':'com.solace.samples.projects.NSEPublishFileToSolace',
+                 'NSECacheRequestor':'com.solace.samples.projects.NSECacheRequestor'
+
 ]
   scripts.each() { scriptName, className ->
           def t = tasks.create(name: scriptName+'StartScript', type: CreateStartScripts) {

@@ -17,7 +17,7 @@
  * under the License.
  */
 
-package com.solace.samples;
+package com.solace.samples.projects;
 
 import java.io.IOException;
 
@@ -33,21 +33,35 @@ import com.solacesystems.jcsmp.XMLMessageConsumer;
 import com.solacesystems.jcsmp.XMLMessageListener;
 import com.solacesystems.jcsmp.XMLMessageProducer;
 
-public class BasicReplier {
+import com.mongodb.client.*;
+import com.mongodb.ServerAddress;
+
+import org.bson.Document;
+import org.bson.conversions.Bson;
+
+import com.mongodb.Block;
+
+import static com.mongodb.client.model.Filters.*;
+
+
+public class NSECacheQueryReplier {
 
     public void run(String... args) throws JCSMPException {
-        System.out.println("BasicReplier initializing...");
+        System.out.println("NSECacheQueryReplier initializing...");
         final JCSMPProperties properties = new JCSMPProperties();
-        properties.setProperty(JCSMPProperties.HOST, args[0]);     // host:port
-        properties.setProperty(JCSMPProperties.USERNAME, args[1].split("@")[0]); // client-username
-        properties.setProperty(JCSMPProperties.VPN_NAME,  args[1].split("@")[1]); // message-vpn
-        if (args.length > 2) {
-            properties.setProperty(JCSMPProperties.PASSWORD, args[2]); // client-password
-        }
+        properties.setProperty(JCSMPProperties.HOST, args[0]);      // msg-backbone ip:port
+        properties.setProperty(JCSMPProperties.VPN_NAME, args[1]);  // message-vpn
+        properties.setProperty(JCSMPProperties.USERNAME, args[2]);  // client-username
+        properties.setProperty(JCSMPProperties.PASSWORD, args[3]);  // client-password
         final JCSMPSession session = JCSMPFactory.onlyInstance().createSession(properties);
-        session.connect();
+        session.connect();        
 
-        final Topic topic = JCSMPFactory.onlyInstance().createTopic("tutorial/requests");
+        final Topic topic = JCSMPFactory.onlyInstance().createTopic("nse/cache/requests");
+        
+        System.out.println("Connecting to MongoDB...");
+        MongoClient mongoClient = MongoClients.create("mongodb+srv://admin:lditJ3JDZA12eKcM@cluster0-bhxmr.mongodb.net/test?retryWrites=true");
+        MongoDatabase database = mongoClient.getDatabase("nse");
+        MongoCollection<Document> collection = database.getCollection("stockCache");
 
         /** Anonymous inner-class for handling publishing events */
         final XMLMessageProducer producer = session.getMessageProducer(new JCSMPStreamingPublishEventHandler() {
@@ -66,20 +80,39 @@ public class BasicReplier {
         final XMLMessageConsumer cons = session.getMessageConsumer(new XMLMessageListener() {
             @Override
             public void onReceive(BytesXMLMessage request) {
+            	
+                Block<Document> printBlock = new Block<Document>() {
+                    @Override
+                    public void apply(final Document document) {
+                        System.out.println(document.toJson());
+                        TextMessage reply = JCSMPFactory.onlyInstance().createMessage(TextMessage.class);
+                        reply.setText(document.toJson());
+                        try {
+                        	producer.sendReply(request,reply);
+        				} catch (JCSMPException e) {
+        					// TODO Auto-generated catch block
+        					e.printStackTrace();
+        				}
+                    }
+                };
 
                 if (request.getReplyTo() != null) {
-                    System.out.println("Received request, generating response");
-                    TextMessage reply = JCSMPFactory.onlyInstance().createMessage(TextMessage.class);
+                    System.out.printf("Received Message Dump:%n%s%n",request.dump());
+                    
+                    String payload = ((TextMessage) request).getText();
+                    System.out.println("Payload:" + payload);
+                    String[] tokens = payload.split(":");
+                    int startId = Integer.parseInt(tokens[0]);
+                    int endId = Integer.parseInt(tokens[1]);
+                    System.out.println("Start:" + startId);
+                    System.out.println("End:" + endId);
 
-                    final String text = "Sample response";
-                    reply.setText(text);
+                    System.out.println("Received request, generating response to " + request.getReplyTo());
+               //     TextMessage reply = JCSMPFactory.onlyInstance().createMessage(TextMessage.class);
+                    
+                    Bson filter = and(gte("material_id", startId), lte("material_id", endId));
+                    collection.find(filter).forEach(printBlock);
 
-                    try {
-                        producer.sendReply(request, reply);
-                    } catch (JCSMPException e) {
-                        System.out.println("Error sending reply.");
-                        e.printStackTrace();
-                    }
                 } else {
                     System.out.println("Received message without reply-to field");
                 }
@@ -90,6 +123,7 @@ public class BasicReplier {
                 System.out.printf("Consumer received exception: %s%n", e);
             }
         });
+                
 
         session.addSubscription(topic);
         cons.start();
@@ -112,7 +146,7 @@ public class BasicReplier {
     public static void main(String... args) throws JCSMPException {
 
         // Check command line arguments
-        if (args.length < 2 || args[1].split("@").length != 2) {
+     /*   if (args.length < 2 || args[1].split("@").length != 2) {
             System.out.println("Usage: BasicReplier <host:port> <client-username@message-vpn> [client-password]");
             System.out.println();
             System.exit(-1);
@@ -126,9 +160,9 @@ public class BasicReplier {
             System.out.println("No message-vpn entered");
             System.out.println();
             System.exit(-1);
-        }
+        } */
 
-        BasicReplier replier = new BasicReplier();
+        NSECacheQueryReplier replier = new NSECacheQueryReplier();
         replier.run(args);
     }
 }

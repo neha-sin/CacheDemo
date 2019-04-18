@@ -38,54 +38,28 @@ cd solace-samples-java
 
 ## Running the Samples
 
-To try individual samples, build the project from source and then run samples like the following:
+Publisher Flow:
 
-    ./build/staged/bin/topicPublisher <msg_backbone_ip:port>
+1. NSEPublishFileToSolace: This will read the input file line by line and publish it to the topic “nse/stock/put”
 
-The individual tutorials linked above provide full details which can walk you through the samples, what they do, and how to correctly run them to explore Solace messaging.
+Command to execute:
+./build/staged/bin/NSEPublishFileToSolace <msg-vpn> <vpn-name> <userid> <password> <inputfile>
+ 
+ 
+2. NSEStoreCache: This will read from Queue “nse/cache”. Store the message in MongoDB.
 
-## Exploring the Samples
+Command to execute:
+./build/staged/bin/NSEStoreCache <msg-vpn> <vpn-name> <userid> <password>
+ 
 
-### Setting up your preferred IDE
+Consumer Flow:
 
-Using a modern Java IDE provides cool productivity features like auto-completion, on-the-fly compilation, assisted refactoring and debugging which can be useful when you're exploring the samples and even modifying the samples. Follow the steps below for your preferred IDE.
+1. NSECacheRequestor: This will send request to Solace to get the cache data and wait for the response
+    Command to execute:
+	./build/staged/bin/NSECacheRequestor <msg-vpn> <vpn-name> <userid> <password> <startRange> <endRange>
 
-#### Using Eclipse
 
-To generate Eclipse metadata (.classpath and .project files), do the following:
+2. NSECacheQueryReplier: Wait for request from NSECacheRequestor, fetch data and respond back
+Command to execute:
+./build/staged/bin/NSECacheQueryReplier <msg-vpn> <vpn-name> <userid> <password>
 
-    ./gradlew eclipse
-
-Once complete, you may then import the projects into Eclipse as usual:
-
- *File -> Import -> Existing projects into workspace*
-
-Browse to the *'solace-samples-java'* root directory. All projects should import
-free of errors.
-
-#### Using IntelliJ IDEA
-
-To generate IDEA metadata (.iml and .ipr files), do the following:
-
-    ./gradlew idea
-
-## Contributing
-
-Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduct, and the process for submitting pull requests to us.
-
-## Authors
-
-See the list of [contributors](https://github.com/SolaceSamples/solace-samples-java/contributors) who participated in this project.
-
-## License
-
-This project is licensed under the Apache License, Version 2.0. - See the [LICENSE](LICENSE) file for details.
-
-## Resources
-
-For more information try these resources:
-
-- The Solace Developer Portal website at: http://dev.solace.com
-- Get a better understanding of [Solace technology](http://dev.solace.com/tech/).
-- Check out the [Solace blog](http://dev.solace.com/blog/) for other interesting discussions around Solace technology
-- Ask the [Solace community.](http://dev.solace.com/community/)
